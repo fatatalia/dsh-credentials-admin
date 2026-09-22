@@ -255,7 +255,7 @@ class CredentialsAdminService extends TypertRemoteService {
       throw reject("too-long", `值过长（${value.length} 字符 > 上限 ${MAX_VALUE_LENGTH}）`);
     }
     try {
-      const { replaced } = await this.#mutate((text) => setRef(text, refName, value));
+      const { replaced } = await this.mutateRefs((text) => setRef(text, refName, value));
       return { name: refName, replaced };
     } catch (error) {
       throw reject("write-failed", error);
@@ -269,7 +269,7 @@ class CredentialsAdminService extends TypertRemoteService {
       throw reject("bad-name", `凭据名只能用字母、数字、下划线，且不能以数字开头（收到 ${JSON.stringify(payload?.name ?? null)}）`);
     }
     try {
-      const { removed } = await this.#mutate((text) => removeRef(text, refName));
+      const { removed } = await this.mutateRefs((text) => removeRef(text, refName));
       return { name: refName, removed };
     } catch (error) {
       throw reject("write-failed", error);
@@ -279,8 +279,17 @@ class CredentialsAdminService extends TypertRemoteService {
   /**
    * 读-改-写一次，全程持有 dsh 的写锁，落盘前用官方解析器自校验。
    * 顺序刻意如此：先校验文本再写，校验不过就抛错，磁盘保持原样。
+   *
+   * ⚠️ 这个方法**必须是普通方法，绝不能改成 `#私有方法`**（2026-09-22 踩的坑）：
+   * Cordis 的 `Service` 基类把实例包成了 Proxy
+   * （`cordis/lib/index.js`：`const self = new Proxy(this, ReflectService.handler)`），
+   * 而私有方法/字段带 **brand check** —— 经 Proxy 调用时 `this` 不是"真实例"，
+   * 直接抛 `Receiver must be an instance of class CredentialsAdminService`。
+   * 普通属性读取不受影响（Proxy 照常转发），所以 `list()` 一路正常，
+   * 只有经由这里的 `set`/`unset` 会挂。官方 `dsh-api-settings-controller` 同样
+   * 一个 `#` 私有成员都不用，就是这个原因。
    */
-  async #mutate(transform) {
+  async mutateRefs(transform) {
     await mkdir(dirname(this.filename), { recursive: true, mode: 0o700 });
     return withFileLock(
       this.filename,
