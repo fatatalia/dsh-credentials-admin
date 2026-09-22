@@ -1,0 +1,6 @@
+# dsh-credentials-admin bundle patch
+# 插入 host 插件行：注册 credentialsAdmin remote service，
+# 在设置页提供 `refs:` 凭据的增 / 改 / 删（永不回显已配置的值）。
+- insert:
+    - id: dsh-credentials-admin
+      name: dsh-credentials-admin
