@@ -4,6 +4,13 @@
 
 一句话设计原则：**值只进不出。** 界面能写新值，但永远不会显示、也不能取回任何已配置的值 —— 连值的长度都不给。这是设计，不是遗漏。
 
+## dsh 版本兼容性
+
+**要求 dsh ≥ 0.1.7-rc.1**（已在 0.1.7-rc.1 实测通过）。
+
+- **Typert strict codec 必须带 `create()` 工厂**（2026-09-24）：0.1.7 起**客户端** typert registry 对 strict codec 同样严格校验（`dsh-typert-registry/lib/client.js` 要求 `codec.create` 是函数），缺失则打开设置卡片即报
+  `typert: <id> result strict codec has no create() factory`。`client.js` 与 `index.js` 两处 codec 均已补 `create()`（服务端 gateway 走 `codec.create().parse(v)`）。
+
 ## 它做什么
 
 | 能做 | 不能做（有意为之） |

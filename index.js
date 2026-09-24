@@ -153,10 +153,11 @@ export function removeRef(text, refName) {
 }
 
 // ── Typert wire schemas ───────────────────────────────────────────────────
-// Typert 只要求 codec.schema 是带 `parse(value)` 的对象；这里宽松放行，
+// Typert 只要求 codec 是带 `parse(value)` 的对象；这里宽松放行，
 // 真正的校验在方法体内（名字语法、空值、长度）。
-const wireSchema = { parse: (value) => value };
-const codec = (symbol) => ({ mode: "strict", typeSymbol: symbol, schema: wireSchema });
+// 0.1.7：strict codec 还必须提供 create() 工厂（gateway 走 codec.create().parse(v)）。
+const wireSchema = { parse: (value) => value, create: () => wireSchema };
+const codec = (symbol) => ({ mode: "strict", typeSymbol: symbol, schema: wireSchema, create: () => wireSchema });
 
 /** 注册给 API gateway 的远程方法清单（Typert MANIFEST）。 */
 const MANIFEST = {
